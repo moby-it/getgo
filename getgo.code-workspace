@@ -1,0 +1,9 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "extensions": { "recommendations": ["golang.go"] },
+  "settings": {}
+}
