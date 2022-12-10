@@ -9,7 +9,7 @@ clean:
 
 .PHONY: build
 build: clean
-	go build -o bin/getgo main.go
+	go build -o bin/getgo cmd/main.go
 
 .PHONY:start
 start: build
@@ -20,7 +20,7 @@ test:
 
 .PHONY: run
 run: 
-	go run main.go
+	go run cmd/main.go
 
 .PHONY: install
 install: build
