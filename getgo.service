@@ -1,0 +1,11 @@
+[Unit]
+Description=Simple CD tool for your container registry
+Documentation=https://github.com/moby-it/getgo
+After=multi-user.target
+BindsTo=docker.service
+
+[Service]
+ExecStart=/apps/getgo/bin/getgo
+
+[Install]
+WantedBy=multi-user.target
