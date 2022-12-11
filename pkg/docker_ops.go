@@ -1,4 +1,5 @@
-package registry_ops
+// / Docker operations for handling deployments.
+package docker_ops
 
 import (
 	"context"
@@ -70,6 +71,8 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+// / If there is any container with a name that matches serviceName, it destroys and recreates it with the same network configuration.
 func updateContainer(hookResponse HookResponse, serviceName string) error {
 	ctx = context.Background()
 	_cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -109,6 +112,8 @@ func updateContainer(hookResponse HookResponse, serviceName string) error {
 	defer out.Close()
 	return nil
 }
+
+// Destroys a container with the given name. Throws an error if no active containers are found.
 func destroyContainer(containerName string) (*types.Container, error) {
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
@@ -128,6 +133,8 @@ func destroyContainer(containerName string) (*types.Container, error) {
 	return nil, fmt.Errorf("failed to destroy container. No container found with name %v", containerName)
 
 }
+
+// / Given an image name, and a portMap, it recreates the container with the given image name, appending the stable tag.
 func recreateContainer(containerName string, imageName string, portMap nat.PortMap) error {
 	container, err := cli.ContainerCreate(ctx, &container.Config{Image: fmt.Sprintf("%v:stable", imageName)}, &container.HostConfig{PortBindings: portMap}, &network.NetworkingConfig{}, &v1.Platform{}, containerName)
 	if err != nil {
@@ -149,6 +156,8 @@ func extractPortMapFromContainer(container *types.Container) (nat.PortMap, error
 	portMap[nat.Port(fmt.Sprintf("%v/%v", firstPort.PrivatePort, firstPort.Type))] = []nat.PortBinding{{HostIP: firstPort.IP, HostPort: publicPort}}
 	return portMap, nil
 }
+
+// / Check if there is any container that matches the serviceName.
 func serviceNameRunning(serviceName string) bool {
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {

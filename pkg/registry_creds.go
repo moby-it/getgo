@@ -1,4 +1,4 @@
-package registry_ops
+package docker_ops
 
 import (
 	"encoding/base64"
@@ -14,6 +14,7 @@ type RegistryCreds struct {
 	Password string
 }
 
+// / Gets the docker registry credentials from environment. Returns an error if any of them are not found.
 func getRegistryCredsFromEnv() (string, error) {
 	username := os.Getenv("DOCKER_USERNAME")
 	password := os.Getenv("DOCKER_PASSWORD")

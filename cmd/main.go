@@ -1,3 +1,4 @@
+// / GetGo is a tool that aims to help you deploy your Dockerhub Repositories to your virtual machine. It is based on Dockerhub Webhooks.
 package main
 
 import (
@@ -6,7 +7,7 @@ import (
 	"net/http"
 
 	custom_logger "moby-it/getgo/internal"
-	registry_ops "moby-it/getgo/pkg"
+	docker_ops "moby-it/getgo/pkg"
 )
 
 const port = 32041
@@ -21,7 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	http.HandleFunc("/deploy/", registry_ops.HandleContainerPush)
+	http.HandleFunc("/deploy/", docker_ops.HandleContainerPush)
 	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
 		log.Fatalln("App crash.", err)
