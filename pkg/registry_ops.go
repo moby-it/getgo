@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -74,6 +75,9 @@ func updateContainer(hookResponse HookResponse, serviceName string) error {
 		return err
 	}
 	out, err := cli.ImagePull(ctx, fmt.Sprintf("%v:%v", hookResponse.Repository.RepoName, stable), types.ImagePullOptions{})
+	io.Copy(os.Stdout, out)
+	defer out.Close()
+
 	if err != nil {
 		return err
 	}
