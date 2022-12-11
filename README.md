@@ -1,17 +1,61 @@
 # GetGo Continous Deployment Tool
 
-GetGo is a tool that aims to help you deploy your Container Registry continious integrations to your virtual machine.
+GetGo is a tool that aims to help you deploy your Dockerhub Repositories to your virtual machine. It is based on [Dockerhub Webhooks](https://docs.docker.com/docker-hub/webhooks).
 
-## Why GetGo? 
+# How it Works
 
-GetGo aims to provide a seemles integration with a Container Registry to your VM, whenever it resides. 
+- GetGo runs as a **systemd** service inside your Debian-Based Virtual Machice. It exposes a simple HTTP POST endpoint at localhost:32041/deploy/**service-name**. The endpoint expects a json body similar to [what dockerhub uses for its webhooks](https://docs.docker.com/docker-hub/webhooks/#example-webhook-payload).
 
-GetGo runs as a service on a given VM [See install intruction bellow](#install-and-configure). Making use of Docker Webhooks from your Container Registry you can easily configure the continious deployment of your service to the VM of your choice.
+- If there is a container with a name that matches url path param **service-name** AND the `push_data.tag == "stable"` then GetGo pulls the new image based on `repository.repo_name:stable`, destroys any containers that match the **service-name** and recreated them, exposing the same ports.
+# Install and Configure
 
-## Install and Configure
-## What made me do this? Need behind the idea
-As a developer using popular cloud providers (AWS and Azure mostly) I realised that I became more entangled with these services than I wished for. I realised that I was paying more than I was usually needing. This is why I started transfering my infrastructure to seperate providers, comparably smaller than the big fishes that I mentioned earlier, and noticed pretty easily that there are many alternatives out there.
+## Requirements
 
-While there are plenty of upsides using "smaller" cloud providers, a common downside of those alternatives is that on some occasions the tooling is not as easy-to-use as on the bigger fishes in the pond, which makes sense.
+For GetGo to work, it is expected that you have at least ssh access to a  remote machine with the following:
 
-This is why I decided that maybe I can contribute on that matter. While there are (for me at least) really easy ways to build and deploy your images to a container registry, there is not a tool that will help me specifically newly pushed image to my Web Server. 
+1. Docker installed. [Install docker](https://docs.docker.com/engine/install/ubuntu/)
+2. Go installed (sudo snap install go --classic)
+3. make installed (sudo apt-get install build-essential)
+4. listening to http calls. ([Install and configure NGINX](https://ubuntu.com/tutorials/install-and-configure-nginx#1-overview))
+
+## Install instructions
+
+1. Connect yo your remote machine.
+2. Clone this repository - [How to clone a repository](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository)
+3. Open a terminal and navigate inside the above repository folder.
+4. run `make install` as sudo.
+
+Now the service should already be active. To check this, run `sudo systemctl status getgo`. If you want to enable this service to run on startup, run `sudo systemctl enable getgo`.
+
+For the installation to be complete, you need to provide a DOCKER_USERNAME and DOCKER_PASSWORD as an environment variable for your systemd service. To do that run `sudo systemctl edit getgo`. You should add the following lines :
+
+```
+[Service]
+Environment="DOCKER_USERNAME=YOUR_DOCKER_USERNAME"
+Environment="DOCKER_PASSWORD=YOUR_DOCKER_ACCESS_TOKEN"`
+```
+
+[Suggested way of adding environment variables to systemd](https://serverfault.com/questions/413397/how-to-set-environment-variable-in-systemd-service)
+
+After saving make sure to run `sudo systemctl daemon-reload`
+
+## Configure
+
+After installing you have a service running in your system that exposes a simple HTTP POST endpoint at `http://locahost:31042/deploy`.
+
+Since this is a Continious Deployment tool, it only makes sense if you can hit this endpoint via the internet. At this point you should make sure that http://locahost:31042/deploy is accessible from the outside world. If you use NGINX you can read more on how to do this [here](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/).
+
+The last piece of the puzzle is configuring the source of the "to-be-deployed" container. GetGo was written for consuming calls made from [DockerHub Webhooks](https://docs.docker.com/docker-hub/webhooks).
+If you've wired up your web-server to correctly forward calls from `https://your-web-server-domain.com/deploy/service-name` to `http://localhost:31042/deploy/service-name` then GetGo will start a deployment process if **ALL** of the following criteria are met:
+
+1. The HTTP POST request has a body that follows the [DockerHub Webhook schema](https://docs.docker.com/docker-hub/webhooks/#example-webhook-payload). 
+2. The `push_data.tag` property is equal to `"stable"`
+3. There is a container running on your machine, with a container name that matches the `service-name`.
+
+
+## How it does NOT work
+
+- GetGo does not deploy your containers for the first time. **It expects of you to set the container up for the first time, with a **container-name** and networking properties of your choice.**
+- GetGo operations for deployment get triggered on by receiving a `push_data.tag == "stable"` for now.
+- It is your responsibility to expose the port of this service to the internet on any of your VMs if you want to trigger it from an online container registry (like Dockerhub)
+- It is also expected of you to set up the webhook of your registry correctly. The **service-name** url param should match the **container-name** running on your machine.
