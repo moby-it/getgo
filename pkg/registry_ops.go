@@ -26,6 +26,7 @@ var cli *client.Client
 var ctx context.Context
 
 func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var res HookResponse
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusNotFound)
@@ -47,6 +48,12 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	if !serviceNameRunning(serviceName) {
+		message := fmt.Sprintf("Service %v not running. Please start the service before wiring up your webhooks.", serviceName)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(message))
+		return
+	}
 	if res.PushData.Tag == stable {
 		log.Println("Tag pushed is stable. Starting build of", fmt.Sprintf("%v:%v", serviceName, stable))
 		err := updateContainer(res, serviceName)
@@ -58,10 +65,10 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			log.Println("Succesfully updated container", serviceName)
+			w.WriteHeader(http.StatusOK)
 		}
 	}
-	w.WriteHeader(http.StatusOK)
-	defer r.Body.Close()
+
 }
 func updateContainer(hookResponse HookResponse, serviceName string) error {
 	ctx = context.Background()
@@ -141,4 +148,17 @@ func extractPortMapFromContainer(container *types.Container) (nat.PortMap, error
 	publicPort := strconv.Itoa(int(firstPort.PublicPort))
 	portMap[nat.Port(fmt.Sprintf("%v/%v", firstPort.PrivatePort, firstPort.Type))] = []nat.PortBinding{{HostIP: firstPort.IP, HostPort: publicPort}}
 	return portMap, nil
+}
+func serviceNameRunning(serviceName string) bool {
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+	if err != nil {
+		log.Fatalln(err)
+		return false
+	}
+	for _, c := range containers {
+		if strings.Contains(c.Names[0], serviceName) {
+			return true
+		}
+	}
+	return false
 }
