@@ -74,7 +74,13 @@ func updateContainer(hookResponse HookResponse, serviceName string) error {
 	if err != nil {
 		return err
 	}
-	out, err := cli.ImagePull(ctx, fmt.Sprintf("%v:%v", hookResponse.Repository.RepoName, stable), types.ImagePullOptions{})
+	creds, err := getRegistryCredsFromEnv()
+	if err != nil {
+		return err
+	}
+	out, err := cli.ImagePull(ctx, fmt.Sprintf("%v:%v", hookResponse.Repository.RepoName, stable), types.ImagePullOptions{
+		RegistryAuth: creds,
+	})
 	io.Copy(os.Stdout, out)
 	defer out.Close()
 
