@@ -21,7 +21,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	defer log.Println("Service Stopped.")
 	http.HandleFunc("/deploy/", registry_ops.HandleContainerPush)
 	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
