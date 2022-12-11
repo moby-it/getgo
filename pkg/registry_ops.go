@@ -73,7 +73,7 @@ func updateContainer(hookResponse HookResponse, serviceName string) error {
 	if err != nil {
 		return err
 	}
-	out, err := cli.ImagePull(ctx, hookResponse.Repository.RepoName+fmt.Sprintf(":%v", stable), types.ImagePullOptions{})
+	out, err := cli.ImagePull(ctx, fmt.Sprintf("%v:%v", hookResponse.Repository.RepoName, stable), types.ImagePullOptions{})
 	if err != nil {
 		return err
 	}
