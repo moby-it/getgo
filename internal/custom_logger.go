@@ -13,6 +13,6 @@ func SetLogger(logsPath string) (*os.File, error) {
 		return nil, err
 	}
 	log.SetOutput(file)
-	log.Println("Service Started. v1.0.3")
+	log.Println("Service Started. v1.0.4")
 	return file, nil
 }

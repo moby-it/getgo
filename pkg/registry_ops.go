@@ -52,7 +52,7 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 		err := updateContainer(res, serviceName)
 		if err != nil {
 			message := "Failed to update container"
-			log.Println(message, serviceName, err)
+			log.Println(message, serviceName, "Reason:", err)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(message))
 			return
