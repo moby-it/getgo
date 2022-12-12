@@ -48,6 +48,13 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	ctx = r.Context()
+	_cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	cli = _cli
+	defer cli.Close()
 	if !serviceNameRunning(serviceName) {
 		message := fmt.Sprintf("Service %v not running. Please start the service before wiring up your webhooks.", serviceName)
 		w.WriteHeader(http.StatusBadRequest)
@@ -73,16 +80,6 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 
 // / If there is any container with a name that matches serviceName, it destroys and recreates it with the same network configuration.
 func updateContainer(hookResponse HookResponse, serviceName string) error {
-	ctx = context.Background()
-	_cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
-	cli = _cli
-	defer cli.Close()
-	if err != nil {
-		return err
-	}
 	creds, err := getRegistryCredsFromEnv()
 	if err != nil {
 		return err

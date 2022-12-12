@@ -31,12 +31,16 @@
   },
   "launch": {
     "version": "0.2.0",
-    "configurations": [{
-      "name": "Debug",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${fileDirname}/cmd/main.go"
-    }]
+    "configurations": [
+      {
+        "name": "Debug",
+        "cwd": ".",
+        "envFile": "${fileDirname}/.env",
+        "type": "go",
+        "request": "launch",
+        "mode": "auto",
+        "program": "${fileDirname}/cmd"
+      }
+    ]
   }
 }
