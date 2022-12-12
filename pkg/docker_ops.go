@@ -19,10 +19,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"golang.org/x/exp/slices"
 )
-
-const stable = "stable"
-const latest = "latest"
 
 var cli *client.Client
 var ctx context.Context
@@ -33,9 +31,12 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	serviceName := strings.Trim(strings.TrimPrefix(r.URL.Path, "/deploy/"), " ")
-	if len(serviceName) <= 0 {
-		errorMessage := "Invalid CD endpoint. Pushed a service with no name."
+	containerAndTag := strings.Trim(strings.TrimPrefix(r.URL.Path, "/deploy/"), " ")
+	containerName := strings.Split(containerAndTag, "/")[0]
+	tag := strings.Split(containerAndTag, "/")[1]
+	log.Println(containerName, tag)
+	if len(containerName) <= 0 || len(tag) <= 0 {
+		errorMessage := "Invalid CD endpoint. Your url should look like this: /deploy/:container-name/:tag"
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(errorMessage))
 		log.Println(errorMessage)
@@ -56,15 +57,15 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 	}
 	cli = _cli
 	defer cli.Close()
-	image := fmt.Sprintf("%v:%v", res.Repository.RepoName, res.PushData.Tag)
-	if !serviceNameRunning(image) {
-		message := fmt.Sprintf("Service %v not running. Please start the service before wiring up your webhooks.", image)
+	if !serviceNameRunning(containerName) {
+		message := fmt.Sprintf("Container with name %v not found. Please start the service before wiring up your webhooks.", containerName)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(message))
 		return
 	}
-	if tagIsValid(res.PushData.Tag) {
-		log.Println("Starting build of", image)
+	if res.PushData.Tag == tag {
+		log.Println("Starting build of", containerName)
+		image := fmt.Sprintf("%v:%v", res.Repository.RepoName, tag)
 		err := updateContainer(image)
 		if err != nil {
 			message := "Failed to update container"
@@ -155,20 +156,17 @@ func extractPortMapFromContainer(container *types.Container) (nat.PortMap, error
 	return portMap, nil
 }
 
-// / Check if there is any container that matches the imageName.
-func serviceNameRunning(imageName string) bool {
+// / Check if there is any container that matches the containerName.
+func serviceNameRunning(containerName string) bool {
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
 		log.Fatalln(err)
 		return false
 	}
 	for _, c := range containers {
-		if c.Image == imageName {
+		if slices.Contains(c.Names, containerName) {
 			return true
 		}
 	}
 	return false
-}
-func tagIsValid(tag string) bool {
-	return tag == stable || tag == latest
 }
