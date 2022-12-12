@@ -47,7 +47,7 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 	defer cli.Close()
 	containerName := fmt.Sprintf("%v-%v", res.Repository.Name, res.PushData.Tag)
 	if !containerRunning(containerName) {
-		message := fmt.Sprintf("Container with name %v not running. Please start the service before wiring up your webhooks.", containerName)
+		message := fmt.Sprintf("Container with name %v not running. Please start the container before wiring up your webhooks.", containerName)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(message))
 		return
@@ -143,15 +143,15 @@ func extractPortMapFromContainer(container *types.Container) (nat.PortMap, error
 	return portMap, nil
 }
 
-// / Check if there is any container that matches the serviceName.
-func containerRunning(serviceName string) bool {
+// / Check if there is any container that matches the containerName.
+func containerRunning(containerName string) bool {
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
 		log.Fatalln(err)
 		return false
 	}
 	for _, c := range containers {
-		if strings.Contains(c.Names[0], serviceName) {
+		if strings.Contains(c.Names[0], containerName) {
 			return true
 		}
 	}
