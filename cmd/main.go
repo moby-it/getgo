@@ -22,7 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	http.HandleFunc("/deploy/", docker_ops.HandleContainerPush)
+	http.HandleFunc("/deploy", docker_ops.HandleContainerPush)
 	err = http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
 		log.Fatalln("App crash.", err)
