@@ -17,6 +17,7 @@ const logPath = "/apps/getgo"
 // const logPath = "./logs"
 
 func main() {
+
 	file, err := custom_logger.SetLogger(logPath)
 	if err != nil {
 		log.Fatal(err)

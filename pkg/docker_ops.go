@@ -22,6 +22,7 @@ import (
 )
 
 const stable = "stable"
+const latest = "latest"
 
 var cli *client.Client
 var ctx context.Context
@@ -55,23 +56,24 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 	}
 	cli = _cli
 	defer cli.Close()
-	if !serviceNameRunning(serviceName) {
-		message := fmt.Sprintf("Service %v not running. Please start the service before wiring up your webhooks.", serviceName)
+	image := fmt.Sprintf("%v:%v", res.Repository.RepoName, res.PushData.Tag)
+	if !serviceNameRunning(image) {
+		message := fmt.Sprintf("Service %v not running. Please start the service before wiring up your webhooks.", image)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(message))
 		return
 	}
-	if res.PushData.Tag == stable {
-		log.Println("Tag pushed is stable. Starting build of", fmt.Sprintf("%v:%v", serviceName, stable))
-		err := updateContainer(res, serviceName)
+	if tagIsValid(res.PushData.Tag) {
+		log.Println("Starting build of", image)
+		err := updateContainer(image)
 		if err != nil {
 			message := "Failed to update container"
-			log.Println(message, serviceName, "Reason:", err)
+			log.Println(message, image, "Reason:", err)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(message))
 			return
 		} else {
-			log.Println("Succesfully updated container", serviceName)
+			log.Println("Succesfully updated container", image)
 			w.WriteHeader(http.StatusOK)
 		}
 	}
@@ -79,12 +81,12 @@ func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
 }
 
 // / If there is any container with a name that matches serviceName, it destroys and recreates it with the same network configuration.
-func updateContainer(hookResponse HookResponse, serviceName string) error {
+func updateContainer(image string) error {
 	creds, err := getRegistryCredsFromEnv()
 	if err != nil {
 		return err
 	}
-	out, err := cli.ImagePull(ctx, fmt.Sprintf("%v:%v", hookResponse.Repository.RepoName, stable), types.ImagePullOptions{
+	out, err := cli.ImagePull(ctx, image, types.ImagePullOptions{
 		RegistryAuth: creds,
 	})
 	io.Copy(os.Stdout, out)
@@ -93,7 +95,7 @@ func updateContainer(hookResponse HookResponse, serviceName string) error {
 	if err != nil {
 		return err
 	}
-	container, err := destroyContainer(serviceName)
+	container, err := destroyContainer(image)
 	if err != nil {
 		return err
 	}
@@ -101,7 +103,7 @@ func updateContainer(hookResponse HookResponse, serviceName string) error {
 	if err != nil {
 		return err
 	}
-	err = recreateContainer(serviceName, hookResponse.Repository.RepoName, portMap)
+	err = recreateContainer(container.Names[0], image, portMap)
 	if err != nil {
 		return err
 	}
@@ -109,8 +111,8 @@ func updateContainer(hookResponse HookResponse, serviceName string) error {
 	return nil
 }
 
-// Destroys a container with the given name. Throws an error if no active containers are found.
-func destroyContainer(containerName string) (*types.Container, error) {
+// Destroys a container based on an image. Throws an error if no active containers are found.
+func destroyContainer(image string) (*types.Container, error) {
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
 		return nil, err
@@ -119,20 +121,20 @@ func destroyContainer(containerName string) (*types.Container, error) {
 		return nil, fmt.Errorf("no active containers")
 	}
 	for _, c := range containers {
-		if strings.Contains(c.Names[0], containerName) {
+		if c.Image == image {
 			stopTimeout := 2 * time.Minute
 			cli.ContainerStop(ctx, c.ID, &stopTimeout)
 			cli.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{})
 			return &c, nil
 		}
 	}
-	return nil, fmt.Errorf("failed to destroy container. No container found with name %v", containerName)
+	return nil, fmt.Errorf("failed to destroy container. No container found with image %v", image)
 
 }
 
 // / Given an image name, and a portMap, it recreates the container with the given image name, appending the stable tag.
 func recreateContainer(containerName string, imageName string, portMap nat.PortMap) error {
-	container, err := cli.ContainerCreate(ctx, &container.Config{Image: fmt.Sprintf("%v:stable", imageName)}, &container.HostConfig{PortBindings: portMap}, &network.NetworkingConfig{}, &v1.Platform{}, containerName)
+	container, err := cli.ContainerCreate(ctx, &container.Config{Image: imageName}, &container.HostConfig{PortBindings: portMap}, &network.NetworkingConfig{}, &v1.Platform{}, containerName)
 	if err != nil {
 		return err
 	}
@@ -153,17 +155,20 @@ func extractPortMapFromContainer(container *types.Container) (nat.PortMap, error
 	return portMap, nil
 }
 
-// / Check if there is any container that matches the serviceName.
-func serviceNameRunning(serviceName string) bool {
+// / Check if there is any container that matches the imageName.
+func serviceNameRunning(imageName string) bool {
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
 		log.Fatalln(err)
 		return false
 	}
 	for _, c := range containers {
-		if strings.Contains(c.Names[0], serviceName) {
+		if c.Image == imageName {
 			return true
 		}
 	}
 	return false
+}
+func tagIsValid(tag string) bool {
+	return tag == stable || tag == latest
 }
