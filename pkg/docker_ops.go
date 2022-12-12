@@ -27,7 +27,6 @@ var cli *client.Client
 var ctx context.Context
 
 func HandleContainerPush(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 	var res HookResponse
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusNotFound)
