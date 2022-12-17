@@ -2,6 +2,9 @@
 
 GetGo is a tool that aims to help you deploy your Dockerhub Repositories to your virtual machine. It is based on [Dockerhub Webhooks](https://docs.docker.com/docker-hub/webhooks).
 
+## Developer Note
+> After moving resources away from mainstream cloud provider infrastructure and started using VPS on multiple providers online, I was in lack of a tool to automaticaly deploy my container from Dockerhub to my VPS and since I wanted to do something in Go either way, I decided to create this tool for myself. After a short while I realized that it's definitely easier to update your container via a remote ssh through Github Actions for solving my CD issue but nevertheless I created a stable version for this tool to sharpen my Go skills, before archiving it. It also has some value if someone want to completely decouple his Deployment Circle from his Source Control repository.
+
 # How it Works
 
 - GetGo runs as a **systemd** service inside your Debian-Based Virtual Machice. It exposes a simple HTTP POST endpoint at localhost:32041/deploy/**service-name**. The endpoint expects a json body similar to [what dockerhub uses for its webhooks](https://docs.docker.com/docker-hub/webhooks/#example-webhook-payload).
