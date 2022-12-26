@@ -2,8 +2,8 @@
 
 GetGo is a tool that aims to help you deploy your Dockerhub Repositories to your virtual machine. It is based on [Dockerhub Webhooks](https://docs.docker.com/docker-hub/webhooks).
 
-## Developer Note
-> After moving resources away from mainstream cloud provider infrastructure and started using VPS on multiple providers online, I was in lack of a tool to automaticaly deploy my container from Dockerhub to my VPS and since I wanted to do something in Go either way, I decided to create this tool for myself. After a short while I realized that it's definitely easier to update your container via a remote ssh through Github Actions for solving my CD issue but nevertheless I created a stable version for this tool to sharpen my Go skills, before archiving it. It also has some value if someone want to completely decouple his Deployment Circle from his Source Control repository.
+# Motivation
+After moving resources away from mainstream cloud provider infrastructure and started using VPS on multiple providers online, I was in lack of a tool to automaticaly deploy my container from Dockerhub to my VPS and since I wanted to do something in Go either way, I decided to create this tool for myself. After a short while I realized that it's definitely easier to update your container via a remote ssh through Github Actions for solving my CD issue but nevertheless I created a stable version for this tool to sharpen my Go skills, before archiving it. It also has some value if someone want to completely decouple his Deployment Circle from his Source Control repository.
 
 # How it Works
 
@@ -14,7 +14,7 @@ GetGo is a tool that aims to help you deploy your Dockerhub Repositories to your
 
 ## Requirements
 
-For GetGo to work, it is expected that you have at least ssh access to a  remote machine with the following:
+For GetGo to work, it is expected that you have at least ssh access to a remote machine with the following:
 
 1. Docker installed. [Install docker](https://docs.docker.com/engine/install/ubuntu/)
 2. Go installed (sudo snap install go --classic)
@@ -26,7 +26,7 @@ For GetGo to work, it is expected that you have at least ssh access to a  remote
 1. Connect yo your remote machine.
 2. Clone this repository - [How to clone a repository](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository)
 3. Open a terminal and navigate inside the above repository folder.
-4. run `make install` as sudo.
+4. run `sudo make install`.
 
 Now the service should already be active. To check this, run `sudo systemctl status getgo`. If you want to enable this service to run on startup, run `sudo systemctl enable getgo`.
 
@@ -56,7 +56,7 @@ If you've wired up your web-server to correctly forward calls from `https://your
 3. There is a container running on your machine, with a container name that matches the `service-name`.
 
 
-## How it does NOT work
+## What NOT to expect from GetGo
 
 - GetGo does not deploy your containers for the first time. **It expects of you to set the container up for the first time, with a **container-name** and networking properties of your choice.**
 - GetGo operations for deployment get triggered on by receiving a `push_data.tag == "stable"` for now.
