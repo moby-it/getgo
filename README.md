@@ -7,9 +7,10 @@ After moving resources away from mainstream cloud provider infrastructure and st
 
 # How it Works
 
-- GetGo runs as a **systemd** service inside your Debian-Based Virtual Machice. It exposes a simple HTTP POST endpoint at localhost:32041/deploy/**service-name**. The endpoint expects a json body similar to [what dockerhub uses for its webhooks](https://docs.docker.com/docker-hub/webhooks/#example-webhook-payload).
+- GetGo runs as a **systemd** service inside your Debian-Based Virtual Machice. It exposes a simple HTTP POST endpoint at localhost:32041/deploy. The endpoint expects a json body similar to [what dockerhub uses for its webhooks](https://docs.docker.com/docker-hub/webhooks/#example-webhook-payload).
 
-- If there is a container with a name that matches url path param **service-name** AND the `push_data.tag == "stable"` then GetGo pulls the new image based on `repository.repo_name:stable`, destroys any containers that match the **service-name** and recreated them, exposing the same ports.
+- If there is a running container with a name that matches the `repository.repo_name-push_tag.tag` then GetGo pulls the new image, destroys and recreates the container, exposing the same ports.
+
 # Install and Configure
 
 ## Requirements
@@ -49,16 +50,13 @@ After installing you have a service running in your system that exposes a simple
 Since this is a Continious Deployment tool, it only makes sense if you can hit this endpoint via the internet. At this point you should make sure that http://locahost:31042/deploy is accessible from the outside world. If you use NGINX you can read more on how to do this [here](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/).
 
 The last piece of the puzzle is configuring the source of the "to-be-deployed" container. GetGo was written for consuming calls made from [DockerHub Webhooks](https://docs.docker.com/docker-hub/webhooks).
-If you've wired up your web-server to correctly forward calls from `https://your-web-server-domain.com/deploy/service-name` to `http://localhost:31042/deploy/service-name` then GetGo will start a deployment process if **ALL** of the following criteria are met:
+If you've wired up your web-server to correctly forward calls from `https://your-web-server-address.com/deploy` to `http://localhost:31042/deploy` then GetGo will start a deployment process if the following criteria are met:
 
 1. The HTTP POST request has a body that follows the [DockerHub Webhook schema](https://docs.docker.com/docker-hub/webhooks/#example-webhook-payload). 
-2. The `push_data.tag` property is equal to `"stable"`
-3. There is a container running on your machine, with a container name that matches the `service-name`.
+2. There is a container running on your machine, with a container name that matches the `repo_name-pushed_tag`.
 
 
 ## What NOT to expect from GetGo
 
-- GetGo does not deploy your containers for the first time. **It expects of you to set the container up for the first time, with a **container-name** and networking properties of your choice.**
-- GetGo operations for deployment get triggered on by receiving a `push_data.tag == "stable"` for now.
+- GetGo does not deploy your containers for the first time. **It expects of you to set the container up for the first time, with a container-name=repository.repo_name-push_data.tag and networking properties of your choice.**
 - It is your responsibility to expose the port of this service to the internet on any of your VMs if you want to trigger it from an online container registry (like Dockerhub)
-- It is also expected of you to set up the webhook of your registry correctly. The **service-name** url param should match the **container-name** running on your machine.
