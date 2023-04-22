@@ -60,3 +60,13 @@ If you've wired up your web-server to correctly forward calls from `https://your
 
 - GetGo does not deploy your containers for the first time. **It expects of you to set the container up for the first time, with a container-name=repository.repo_name-push_data.tag and networking properties of your choice.**
 - It is your responsibility to expose the port of this service to the internet on any of your VMs if you want to trigger it from an online container registry (like Dockerhub)
+
+---
+
+<h3 align="center">
+<img src="https://moby-it.com/assets/MobyIT_Icon_50.png" width="30"/>
+Build by Moby IT
+<img src="https://moby-it.com/assets/MobyIT_Icon_50.png"  width="30"/>
+
+</h3>
+
