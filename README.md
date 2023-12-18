@@ -1,4 +1,7 @@
 # GetGo Continous Deployment Tool
+<p align="center">
+<img src="https://github.com/moby-it/getgo/assets/27289923/d36c026a-92a4-4f88-9b9d-f2bcbcf3431f" width="400" />
+</p>
 
 GetGo is a tool that aims to help you deploy your Dockerhub Repositories to your virtual machine. It is based on [Dockerhub Webhooks](https://docs.docker.com/docker-hub/webhooks).
 
